@@ -1,0 +1,75 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+labels:
+  template: amq-streams
+message: |
+  A new Kafka Topic and User have been created in your project. The user will be
+  authenticted through mTLS. When the user is created by the User Operator, it creates 
+  a new secret with the same name as the KafkaUser resource ("${KAFKA_TOPIC}-user"). 
+  The secret contains a private and public key for mTLS. The public key is contained in a user certificate, 
+  which is signed by a clients CA (certificate authority) when it is created. All keys are in X.509 format.
+metadata:
+  annotations:
+    description: |
+      Application template for creating KafkaTopic and KafkaUser.
+    iconClass: icon-amq
+    openshift.io/display-name: Red Hat AMQ-Streams
+    openshift.io/provider-display-name: Red Hat, Inc. (Canada Regional Office of Technology)
+    tags: messaging,amq,stream
+  name: amq-streams
+parameters:
+- description: Topic name. The topic will be automatically created along side with a dedicated KafkaUser.
+  displayName: Topic
+  name: KAFKA_TOPIC
+  required: true
+  value: authz-topic
+- description: Consumer group name.
+  displayName: Consumer group name
+  name: KAFKA_GROUP
+  value: authz-group
+- description: Kafka Cluster name. (A Kafka cluster with Simple authorization enabled)
+  displayName: Cluster name
+  name: KAFKA_CLUSTER
+  value: authz-cluster
+objects:
+- apiVersion: kafka.strimzi.io/v1beta2
+  kind: KafkaUser
+  metadata:
+    name: ${KAFKA_TOPIC}-user
+    labels:
+      strimzi.io/cluster: ${KAFKA_CLUSTER}
+  spec:
+    authentication:
+      type: tls
+    authorization:
+      type: simple
+      acls:
+        # Example ACL rules for creating, describing, consuming and producing from ${KAFKA_TOPIC} 
+        # using consumer group ${KAFKA_GROUP}
+      - resource:
+          type: topic
+          name: ${KAFKA_TOPIC}
+          patternType: literal
+        operations:
+          - Read
+          - Describe
+          - Write
+          - Create
+        host: "*"
+      - resource:
+          type: group
+          name: ${KAFKA_GROUP}
+          patternType: literal
+        operations:
+          - Read
+        host: "*"
+- apiVersion: kafka.strimzi.io/v1beta2
+  kind: KafkaTopic
+  metadata:
+    labels:
+      strimzi.io/cluster: ${KAFKA_CLUSTER}
+    name: ${KAFKA_TOPIC}
+  spec:
+    partitions: 1
+    replicas: 1
+    topicName: ${KAFKA_TOPIC}

@@ -1,0 +1,20 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  labels:
+    app.kubernetes.io/instance: kafka-ui
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: akhq
+    helm.sh/chart: akhq-0.24.0
+  name: kafka-ui-akhq
+spec:
+  port:
+    targetPort: http
+  tls:
+    insecureEdgeTerminationPolicy: Allow
+    termination: edge
+  to:
+    kind: Service
+    name: kafka-ui-akhq
+    weight: 100
+  wildcardPolicy: None

@@ -1,0 +1,47 @@
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnect
+metadata:
+  name: kafka-connect-cluster
+  annotations:
+    strimzi.io/use-connector-resources: "true" 
+spec:
+  version: 3.3.1
+  replicas: 1
+  bootstrapServers: kafka-cluster-kafka-bootstrap:9093
+  tls:
+    trustedCertificates:
+      - secretName: kafka-cluster-cluster-ca-cert
+        certificate: ca.crt
+  config:
+    group.id: connect-cluster
+    offset.storage.topic: connect-cluster-offsets
+    config.storage.topic: connect-cluster-configs
+    status.storage.topic: connect-cluster-status
+    # -1 means it will use the default replication factor configured in the broker
+    config.storage.replication.factor: -1
+    offset.storage.replication.factor: -1
+    status.storage.replication.factor: -1
+    # Required by aws2-s3 connector
+    config.providers: file
+    config.providers.file.class: org.apache.kafka.common.config.provider.FileConfigProvider
+  build: 
+    output: 
+      type: imagestream  
+      image: amq-streams-connect:latest
+    plugins: 
+      - name: camel-aws2-s3
+        artifacts:
+          - type: tgz
+            url: https://repo1.maven.org/maven2/org/apache/camel/kafkaconnector/camel-aws2-s3-kafka-connector/0.11.5/camel-aws2-s3-kafka-connector-0.11.5-package.tar.gz
+  externalConfiguration: 
+    volumes:
+      - name: aws-credentials
+        secret:
+          secretName: claim-check
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: amq-streams-connect
+...

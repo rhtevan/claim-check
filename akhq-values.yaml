@@ -1,0 +1,18 @@
+secrets:
+  akhq:
+    connections:
+      amq-streams-on-openshift-plain-text:
+        properties:
+          bootstrap.servers: "kafka-cluster-kafka-bootstrap:9092"
+service:
+  enabled: true
+  type: ClusterIP
+  port: 8080
+
+configuration:
+  micronaut:
+    security:
+      enabled: false
+
+networkPolicy:
+  enabled: false
